@@ -1,0 +1,14 @@
+# mcp-servers/brsr-data-server/requirements.txt
+# Install with: pip install -r mcp-servers/brsr-data-server/requirements.txt
+
+# Official MCP Python SDK
+mcp==1.3.0
+
+# Embeddings (same model as ingestion — loaded once, shared cache)
+sentence-transformers==3.3.1
+
+# Postgres — direct connection for vector queries
+psycopg2-binary==2.9.10
+
+# Env vars
+python-dotenv==1.0.1

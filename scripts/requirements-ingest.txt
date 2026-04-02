@@ -1,0 +1,18 @@
+# scripts/requirements-ingest.txt
+# Install with: pip install -r scripts/requirements-ingest.txt
+
+# PDF extraction — preserves tables and layout better than PyPDF2
+pdfplumber==0.11.4
+
+# Embeddings — BAAI/bge-small-en-v1.5, runs fully locally, no API key
+sentence-transformers==3.3.1
+
+# Postgres connection — direct asyncpg for vector inserts
+# (Supabase JS client doesn't handle vector type natively)
+psycopg2-binary==2.9.10
+
+# Progress bar
+tqdm==4.67.1
+
+# Environment variable loading
+python-dotenv==1.0.1
