@@ -1,0 +1,45 @@
+/* apps/web/styles/globals.css */
+/* ─────────────────────────────────────────────────────── */
+/* Base reset + CSS custom properties.                     */
+/* Design system will be built on top of this.             */
+/* ─────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: #0a0a0f;
+  --color-surface: #12121a;
+  --color-text: #e4e4e7;
+  --color-text-muted: #71717a;
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-border: #27272a;
+  --radius: 8px;
+}
+
+html {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
