@@ -1,0 +1,67 @@
+                            Table "public.pipeline_jobs"
+    Column     |           Type           | Collation | Nullable |      Default      
+---------------+--------------------------+-----------+----------+-------------------
+ id            | uuid                     |           | not null | gen_random_uuid()
+ document_id   | uuid                     |           | not null | 
+ status        | text                     |           |          | 
+ error_message | text                     |           |          | 
+ retry_count   | integer                  |           |          | 0
+ created_at    | timestamp with time zone |           |          | now()
+ updated_at    | timestamp with time zone |           |          | now()
+Indexes:
+    "pipeline_jobs_pkey" PRIMARY KEY, btree (id)
+    "idx_pipeline_jobs_document_id" btree (document_id)
+    "idx_pipeline_jobs_status" btree (status)
+Check constraints:
+    "pipeline_jobs_status_check" CHECK (status = ANY (ARRAY['queued'::text, 'ocr_processing'::text, 'llm_extracting'::text, 'awaiting_review'::text, 'approved'::text, 'failed'::text, 'permanently_failed'::text]))
+Foreign-key constraints:
+    "pipeline_jobs_document_id_fkey" FOREIGN KEY (document_id) REFERENCES evidence_documents(id)
+Policies:
+    POLICY "pipeline_jobs_org_isolation"
+      USING ((document_id IN ( SELECT evidence_documents.id
+   FROM evidence_documents
+  WHERE (evidence_documents.organisation_id IN ( SELECT org_memberships.organisation_id
+           FROM org_memberships
+          WHERE (org_memberships.user_id = auth.uid()))))))
+Triggers:
+    trg_pipeline_jobs_updated_at BEFORE UPDATE ON pipeline_jobs FOR EACH ROW EXECUTE FUNCTION update_pipeline_jobs_updated_at()
+
+                           Table "public.document_extractions"
+       Column       |           Type           | Collation | Nullable |      Default      
+--------------------+--------------------------+-----------+----------+-------------------
+ id                 | uuid                     |           | not null | gen_random_uuid()
+ document_id        | uuid                     |           | not null | 
+ structured_data    | jsonb                    |           | not null | 
+ field_confidences  | jsonb                    |           |          | 
+ overall_confidence | numeric(4,3)             |           |          | 
+ llm_model          | text                     |           |          | 
+ is_human_reviewed  | boolean                  |           |          | false
+ reviewed_by        | uuid                     |           |          | 
+ created_at         | timestamp with time zone |           |          | now()
+Indexes:
+    "document_extractions_pkey" PRIMARY KEY, btree (id)
+    "idx_document_extractions_document_id" btree (document_id)
+Foreign-key constraints:
+    "document_extractions_document_id_fkey" FOREIGN KEY (document_id) REFERENCES evidence_documents(id)
+Referenced by:
+    TABLE "emission_inputs" CONSTRAINT "emission_inputs_extraction_id_fkey" FOREIGN KEY (extraction_id) REFERENCES document_extractions(id)
+Policies:
+    POLICY "document_extractions_org_isolation"
+      USING ((document_id IN ( SELECT evidence_documents.id
+   FROM evidence_documents
+  WHERE (evidence_documents.organisation_id IN ( SELECT org_memberships.organisation_id
+           FROM org_memberships
+          WHERE (org_memberships.user_id = auth.uid()))))))
+
+ factor_type 
+-------------
+ direct_ghg
+(1 row)
+
+       relname        | relrowsecurity 
+----------------------+----------------
+ evidence_documents   | t
+ pipeline_jobs        | t
+ document_extractions | t
+(3 rows)
+
