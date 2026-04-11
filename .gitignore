@@ -44,3 +44,6 @@ supabase/.temp/
 *.log
 .cache/
 coverage/
+
+# ── Local docs (generated, not for VCS) ───────────────────
+docs/CURRENT_CODEBASE.md
