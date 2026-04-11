@@ -1,0 +1,52 @@
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE FUNCTION
+NOTICE:  trigger "trg_pipeline_jobs_updated_at" for relation "pipeline_jobs" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+ALTER TABLE
+COMMENT
+DO
+DO
+DO
+COMMENT
+COMMENT
+CREATE FUNCTION
+NOTICE:  trigger "trg_emission_inputs_immutable" for relation "emission_inputs" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+DO
+DO
+DROP POLICY
+NOTICE:  policy "pipeline_jobs_org_isolation" for relation "pipeline_jobs" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+DROP POLICY
+NOTICE:  policy "document_extractions_org_isolation" for relation "document_extractions" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+NOTICE:  policy "evidence_documents_org_isolation" for relation "evidence_documents" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+NOTICE:  policy "emission_inputs_org_isolation" for relation "emission_inputs" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+NOTICE:  policy "reports_org_isolation" for relation "reports" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+NOTICE:  policy "eitl_validations_org_isolation" for relation "eitl_validations" does not exist, skipping
+DO
+CREATE VIEW
+COMMENT
+ERROR:  column "co2e_per_unit" of relation "emission_factors" does not exist
+LINE 2: ...ce, factor_type, valid_from, region, factor_year, co2e_per_u...
+                                                             ^
+INSERT 0 5
+INSERT 0 5
+ERROR:  invalid input syntax for type uuid: "p0000001-5eed-0000-0000-000000000001"
+LINE 3:     ('p0000001-5eed-0000-0000-000000000001','a0000001-5eed-0...
+             ^
+ERROR:  invalid input syntax for type uuid: "p0000001-5eed-0000-0000-000000000001"
+LINE 10:      'p0000001-5eed-0000-0000-000000000001',
+              ^
