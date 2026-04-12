@@ -28,7 +28,8 @@ class Settings(BaseSettings):
 
     # ── AI APIs ───────────────────────────────────────────
     OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    USE_OLLAMA: bool = False
 
     # ── Compliance APIs ───────────────────────────────────
     CLIMATIQ_API_KEY: str = ""

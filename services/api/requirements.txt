@@ -9,6 +9,9 @@ uvicorn[standard]>=0.34.0,<1.0
 pydantic>=2.9.0,<3.0
 pydantic-settings>=2.6.0,<3.0
 
+# ── OpenAI client ────────────────────────────────────────
+openai>=1.30.0,<2.0
+
 # ── Supabase client ──────────────────────────────────────
 supabase>=2.12.0,<3.0
 
