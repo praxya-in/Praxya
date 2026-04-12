@@ -47,3 +47,8 @@ coverage/
 
 # ── Local docs (generated, not for VCS) ───────────────────
 docs/CURRENT_CODEBASE.md
+
+# ── Integration Tests ─────────────────────────────────────
+tests/integration/output/*.json
+tests/integration/output/*.txt
+!tests/integration/output/.gitkeep
