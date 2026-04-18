@@ -1,13 +1,15 @@
 import json
 import logging
-from typing import Literal
+from decimal import Decimal
+from typing import Literal, Optional
+from pydantic import BaseModel
 from openai import OpenAI, APITimeoutError, RateLimitError, APIStatusError
 from pydantic import ValidationError
 
 from services.domain.ingestion.models import OCRResult
 from services.domain.ingestion.extraction_schemas import (
     ElectricityBillExtraction, FuelInvoiceExtraction,
-    ProductionLogExtraction, ExtractionSchema
+    ThermalCoalInvoiceExtraction, ProductionLogExtraction, ExtractionSchema
 )
 from services.domain.ingestion.exceptions import (
     ExtractionValidationError, LLMTimeoutError, LLMRateLimitError, LLMAPIError
@@ -17,6 +19,20 @@ from services.api.core.config import get_settings
 settings = get_settings()
 
 MODEL = "llama-3.3-70b-versatile"
+
+
+class ExtractionResult(BaseModel):
+    """
+    Wrapper around the typed extraction schema with metadata.
+
+    Used by downstream tasks (llm_task.py) to carry extraction + confidence
+    context without coupling to the DB layer.
+    """
+    extraction: ExtractionSchema
+    overall_confidence: Decimal
+    requires_human_review: bool
+    llm_model: str
+    doc_type: str
 
 SYSTEM_PROMPT = """You are a data extraction assistant for Indian GHG compliance.
 Extract the requested fields from the provided document text.
@@ -93,13 +109,35 @@ TOOLS = {
                              "quantity_tonnes", "process_id", "confidence"]
             }
         }
+    }],
+    'thermal_coal_invoice': [{
+        "type": "function",
+        "function": {
+            "name": "extract_thermal_coal_invoice",
+            "description": "Extract structured data from a coal delivery receipt/invoice",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "delivery_date":   {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "supplier_name":   {"type": "string"},
+                    "coal_grade":      {"type": "string", "description": "e.g. F-Grade, G-Grade, Imported"},
+                    "quantity_tonnes": {"type": "number"},
+                    "quantity_GJ":     {"type": "number", "description": "Energy content in GJ if stated"},
+                    "gross_calorific_value_MJ_per_kg": {"type": "number"},
+                    "invoice_number":  {"type": "string"},
+                    "confidence": {"type": "object", "additionalProperties": {"type": "number"}}
+                },
+                "required": ["delivery_date", "confidence"]
+            }
+        }
     }]
 }
 
 SCHEMA_MAP = {
-    'electricity_bill': ElectricityBillExtraction,
-    'fuel_invoice':     FuelInvoiceExtraction,
-    'production_log':   ProductionLogExtraction,
+    'electricity_bill':      ElectricityBillExtraction,
+    'fuel_invoice':          FuelInvoiceExtraction,
+    'thermal_coal_invoice':  ThermalCoalInvoiceExtraction,
+    'production_log':        ProductionLogExtraction,
 }
 
 logger = logging.getLogger(__name__)
@@ -110,7 +148,7 @@ class LLMExtractor:
     def extract(
         self,
         ocr_result: OCRResult,
-        doc_type: Literal['electricity_bill', 'fuel_invoice', 'production_log'],
+        doc_type: Literal['electricity_bill', 'fuel_invoice', 'thermal_coal_invoice', 'production_log'],
         document_id: str
     ) -> ExtractionSchema:
         truncated_text = ocr_result.raw_text[:15000]
@@ -178,6 +216,12 @@ class LLMExtractor:
                 'fuel_type':       'diesel',
                 'quantity_litres': 5000.0,
                 'confidence': {'invoice_date': 0.95, 'quantity_litres': 0.9}
+            },
+            'thermal_coal_invoice': {
+                'delivery_date':   '2024-04-10',
+                'quantity_tonnes':  500.0,
+                'coal_grade':       'G-Grade',
+                'confidence': {'delivery_date': 0.9, 'quantity_tonnes': 0.85}
             },
             'production_log': {
                 'period_start':    '2024-04-01',
