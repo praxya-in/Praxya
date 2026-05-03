@@ -81,4 +81,7 @@ app.include_router(ingestion_router, prefix="/api/ingestion", tags=["ingestion"]
 app.include_router(emissions_router, prefix="/api/emissions", tags=["emissions"])
 
 from services.api.routes.admin import router as admin_router
+from services.api.routes.reports import router as reports_router
+
 app.include_router(admin_router, prefix="/api", tags=["admin"])
+app.include_router(reports_router, prefix="/api/reports", tags=["reports"])

@@ -13,14 +13,34 @@
 }
 
 :root {
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --color-bg: #0a0a0f;
-  --color-surface: #12121a;
-  --color-text: #e4e4e7;
-  --color-text-muted: #71717a;
-  --color-primary: #6366f1;
-  --color-primary-hover: #818cf8;
-  --color-border: #27272a;
+  --bg-primary:    #0a0a0a;
+  --bg-secondary:  #111111;
+  --bg-card:       #141920;
+  --bg-card-hover: #1a2030;
+  --green:         #22c55e;
+  --green-dim:     #16a34a;
+  --green-bright:  #4ade80;
+  --green-glow:    rgba(34, 197, 94, 0.12);
+  --green-border:  rgba(34, 197, 94, 0.25);
+  --white:         #f1f5f9;
+  --white-dim:     #94a3b8;
+  --white-muted:   #475569;
+  --border:        rgba(255, 255, 255, 0.06);
+  --border-bright: rgba(255, 255, 255, 0.12);
+  --amber:         #f59e0b;
+  --red:           #ef4444;
+
+  --font-serif:  'Cormorant Garamond', serif;
+  --font-mono:   'DM Mono', monospace;
+  --font-sans:   'Instrument Sans', sans-serif;
+
+  --color-bg: var(--bg-primary);
+  --color-surface: var(--bg-secondary);
+  --color-text: var(--white);
+  --color-text-muted: var(--white-muted);
+  --color-primary: var(--green);
+  --color-primary-hover: var(--green-bright);
+  --color-border: var(--border);
   --radius: 8px;
 }
 
