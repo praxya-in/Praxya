@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import '@/styles/globals.css'
+import '@/styles/upload.css'
 
 export const metadata: Metadata = {
   title: 'Praxya — BRSR Compliance Platform',

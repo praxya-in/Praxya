@@ -75,7 +75,10 @@ async def health_check():
 
 
 # ── Register routers (add as you build each module) ───────
-# from services.api.routes.ingestion import router as ingestion_router
-# from services.api.routes.emissions  import router as emissions_router
-# app.include_router(ingestion_router, prefix="/api/ingestion", tags=["ingestion"])
-# app.include_router(emissions_router, prefix="/api/emissions", tags=["emissions"])
+from services.api.routes.ingestion import router as ingestion_router
+from services.api.routes.emissions  import router as emissions_router
+app.include_router(ingestion_router, prefix="/api/ingestion", tags=["ingestion"])
+app.include_router(emissions_router, prefix="/api/emissions", tags=["emissions"])
+
+from services.api.routes.admin import router as admin_router
+app.include_router(admin_router, prefix="/api", tags=["admin"])

@@ -217,6 +217,37 @@ export interface EitlValidation {
   validated_at: string
 }
 
+// ── Pipeline tables ───────────────────────────────────────
+
+export interface OrgMembership {
+  id: string
+  user_id: string
+  organisation_id: string
+  role: UserRole
+}
+
+export interface PipelineJob {
+  id: string
+  document_id: string
+  status: string
+  error_message: string | null
+  retry_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DocumentExtraction {
+  id: string
+  document_id: string
+  structured_data: Json
+  field_confidences: Json
+  overall_confidence: number
+  llm_model: string | null
+  is_human_reviewed: boolean
+  reviewed_by: string | null
+  created_at: string
+}
+
 // ── kpi1_ghg_summary view ─────────────────────────────────
 
 export interface Kpi1GhgSummary {
@@ -247,6 +278,9 @@ export interface Database {
       emission_inputs:   { Row: EmissionInput;    Insert: Omit<EmissionInput, 'id' | 'created_at'>;              Update: never }
       emission_results:  { Row: EmissionResult;   Insert: Omit<EmissionResult, 'id' | 'calculated_at' | 'co2e_mt'>; Update: Pick<EmissionResult, 'status' | 'eitl_approved_at' | 'eitl_approved_by' | 'eitl_notes' | 'superseded_by' | 'supersession_reason'> }
       eitl_validations:  { Row: EitlValidation;   Insert: Omit<EitlValidation, 'id' | 'validated_at'>;           Update: never }
+      org_memberships:   { Row: OrgMembership;    Insert: Omit<OrgMembership, 'id'>;                            Update: Partial<OrgMembership> }
+      pipeline_jobs:     { Row: PipelineJob;      Insert: Omit<PipelineJob, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PipelineJob> }
+      document_extractions: { Row: DocumentExtraction; Insert: Omit<DocumentExtraction, 'id' | 'created_at'>; Update: never }
     }
     Views: {
       kpi1_ghg_summary: { Row: Kpi1GhgSummary }
