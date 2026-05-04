@@ -65,7 +65,7 @@
       </td>
       <td style="padding:8px 10px;border:1px solid #e2e8f0;font-size:10px;text-align:right">
         {% if kpi1.ghg_intensity_tco2e_per_tonne %}
-          {{ "%.4f"|format(kpi1.ghg_intensity_tco2e_per_tonne) }}
+          {{ "%.2f"|format(kpi1.ghg_intensity_tco2e_per_tonne) }}
         {% else %}—{% endif %}
       </td>
     </tr>
@@ -91,7 +91,7 @@
       </td>
       <td style="padding:8px 10px;border:1px solid #e2e8f0;font-size:10px;text-align:right">
         {% if kpi3.energy_intensity_gj_per_tonne %}
-          {{ "%.4f"|format(kpi3.energy_intensity_gj_per_tonne) }}
+          {{ "%.2f"|format(kpi3.energy_intensity_gj_per_tonne) }}
         {% else %}—{% endif %}
       </td>
     </tr>

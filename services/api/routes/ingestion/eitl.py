@@ -38,7 +38,7 @@ async def approve_extraction(
     
     job = job_res.data[0]
     if job["status"] != "awaiting_review":
-        raise HTTPException(status_code=400, detail=f"Job is in status '{job['status']}', expected 'awaiting_review'")
+        raise HTTPException(status_code=409, detail=f"Job is in status '{job['status']}', expected 'awaiting_review'")
         
     org_id = job["evidence_documents"]["organisation_id"]
     check_eitl_role(client, user_id, org_id)

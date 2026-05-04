@@ -114,13 +114,14 @@ async def generate_report(
     )
 
     # 9. INSERT into reports table
-    report_insert = admin_client.table("reports").insert({
+    report_insert = supabase.table("reports").insert({
+        "organisation_id": org_id,
         "facility_id": req.facility_id,
         "reporting_period_id": req.reporting_period_id,
         "version": version,
         "storage_path": path,
         "generated_by": user_id,
-        "status": "ready"
+        "status": "complete"
     }).execute()
     
     report_id = report_insert.data[0]["id"]
