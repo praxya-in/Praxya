@@ -59,9 +59,9 @@ def execute_query(sql_description: str, table: str = "emission_factors", **kwarg
         client = get_supabase()
         result = (
             client.table(table)
-            .select("fuel_or_activity, co2e_per_unit, unit")
+            .select("process_id, factor_value, unit")
             .eq("is_active", True)
-            .order("fuel_or_activity")
+            .order("process_id")
             .execute()
         )
         return result.data or []

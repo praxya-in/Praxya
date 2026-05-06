@@ -4,6 +4,7 @@
 # The queue worker (Prompt 5) handles DB updates and Storage downloads.
 
 import io
+import os
 import statistics
 import pdfplumber
 import pytesseract
@@ -13,6 +14,9 @@ from decimal import Decimal
 from typing import List
 
 from services.domain.ingestion.models import OCRResult, PageOCRResult
+
+if os.getenv("TESSERACT_CMD"):
+    pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 
 
 class OCRWorker:

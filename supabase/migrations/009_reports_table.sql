@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS reports (
+DROP TABLE IF EXISTS reports CASCADE;
+
+CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organisation_id UUID NOT NULL REFERENCES organisations(id),
   facility_id UUID NOT NULL REFERENCES facilities(id),

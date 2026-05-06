@@ -32,7 +32,7 @@ export default function DashboardPage() {
         const data = await apiGet(
           '/api/emissions/summary',
           session.access_token,
-          { facility_id: newFacilityId, period_id: newPeriodId }
+          { reporting_period_id: newPeriodId, facility_id: newFacilityId }
         )
         setSummary(data)
       }

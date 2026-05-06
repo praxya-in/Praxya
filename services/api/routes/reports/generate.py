@@ -25,11 +25,11 @@ async def generate_report(
     user_id = user_res.user.id
     
     # 2. Fetch organisation + facility + reporting_period
-    fac_res = supabase.table("facilities").select("name, org_id").eq("id", req.facility_id).single().execute()
+    fac_res = supabase.table("facilities").select("name, organisation_id").eq("id", req.facility_id).single().execute()
     if not fac_res.data:
         raise HTTPException(status_code=404, detail="Facility not found")
         
-    org_id = fac_res.data["org_id"]
+    org_id = fac_res.data["organisation_id"]
     facility_name = fac_res.data["name"]
     
     org_res = supabase.table("organisations").select("name").eq("id", org_id).single().execute()

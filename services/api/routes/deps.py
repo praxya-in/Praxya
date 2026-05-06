@@ -17,5 +17,5 @@ def get_user_supabase(authorization: str = Header(..., description="Bearer JWT t
     settings = get_settings()
     options = ClientOptions(headers={"Authorization": authorization})
     # We use ANON_KEY + User's JWT so it acts as the user
-    client = create_client(settings.NEXT_PUBLIC_SUPABASE_URL, settings.SUPABASE_ANON_KEY, options=options)
+    client = create_client(settings.NEXT_PUBLIC_SUPABASE_URL, settings.NEXT_PUBLIC_SUPABASE_ANON_KEY, options=options)
     return client

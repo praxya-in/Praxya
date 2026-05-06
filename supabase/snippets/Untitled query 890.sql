@@ -1,0 +1,1 @@
+SELECT f.id, f.name, f.organisation_id FROM facilities f;
