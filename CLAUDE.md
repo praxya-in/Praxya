@@ -54,6 +54,8 @@ PROMPT RUN ORDER (from praxya_final_prompts.md):
 ✅  Prompt 6  — FastAPI Routes               DONE  (2026-05-03)
 ✅  Prompt 7  — Upload Portal + EITL UI      DONE  (2026-05-03)
 ⏳  Prompt 8  — Dashboard + PDF Report       PENDING  ← needs 9 + 6 first
+✅  Auth fix (401 resolved)                  DONE  (2026-05-07)
+✅  Integration gap fixes (4/4)              DONE  (2026-05-07)
 
 PARALLEL EXECUTION MAP:
   Now:    Prompt 9 (Session A) + Prompt 6 (Session B) simultaneously
@@ -525,6 +527,11 @@ GAP-10: CA partner sign-off on BRSR PDF template
         Status: pending
         Action: CA must review Jinja2 template output before client receives PDF
         Contact: Target DPC & Co. or SRBC (EY member firm) in Ahmedabad
+
+✅ RESOLVED: Job status route mismatch (2026-05-07)
+✅ RESOLVED: Summary response key mismatch (2026-05-07)
+✅ RESOLVED: Upload missing period fields (2026-05-07)
+✅ RESOLVED: Report status/download endpoints missing (2026-05-07)
 ```
 
 ---
@@ -589,18 +596,18 @@ python -m pytest services/domain/ingestion/tests/ -v   # OCR worker (7 tests)
 ## 11. API ENDPOINTS (reference for frontend development)
 
 ```
-POST   /ingest/upload                    Upload document → creates pipeline_job
-GET    /ingest/jobs/{document_id}        Poll pipeline status + extraction data
-POST   /ingest/eitl/{job_id}/approve     Human approves extraction → status='approved'
-POST   /ingest/eitl/{job_id}/reject      Human rejects → status='failed'
-POST   /emissions/calculate              Trigger GHG + energy calc for a period
-GET    /emissions/summary                Dashboard data from kpi1+kpi3 views
-POST   /reports/generate                 Trigger PDF generation → signed URL
-GET    /reports/{id}/status              Poll report generation status
-GET    /reports/{id}/download            Signed Supabase URL (expires 1 hour)
-GET    /reference/emission-factors       List available factors (for EITL UI)
-GET    /reference/chemical-processes     List processes for a company's category
-POST   /admin/organisations/{id}/request-deletion   DPDP deletion (praxya_admin only)
+POST   /api/ingest/upload                    Upload document → creates pipeline_job
+GET    /api/ingest/jobs/{document_id}        Poll pipeline status + extraction data
+POST   /api/ingest/eitl/{job_id}/approve     Human approves extraction → status='approved'
+POST   /api/ingest/eitl/{job_id}/reject      Human rejects → status='failed'
+POST   /api/emissions/calculate              Trigger GHG + energy calc for a period
+GET    /api/emissions/summary                Dashboard data from kpi1+kpi3 views
+POST   /api/reports/generate                 Trigger PDF generation → signed URL
+GET    /api/reports/{report_id}/status       Poll report generation status
+GET    /api/reports/{report_id}/download     Signed Supabase URL (expires 1 hour)
+GET    /api/reference/emission-factors       List available factors (for EITL UI)
+GET    /api/reference/chemical-processes     List processes for a company's category
+POST   /api/admin/organisations/{id}/request-deletion   DPDP deletion (praxya_admin only)
 ```
 
 **Role permissions:**

@@ -5,7 +5,10 @@
 # ─────────────────────────────────────────────────────────
 
 from functools import lru_cache
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+load_dotenv(".env.local")
 
 
 class Settings(BaseSettings):
@@ -21,6 +24,7 @@ class Settings(BaseSettings):
     NEXT_PUBLIC_SUPABASE_URL: str
     NEXT_PUBLIC_SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
+    SUPABASE_JWT_SECRET: str
 
     # ── Direct Postgres (for psycopg2 / workers) ─────────
     # From `supabase status` → DB URL field

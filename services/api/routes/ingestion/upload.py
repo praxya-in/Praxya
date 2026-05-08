@@ -1,5 +1,6 @@
 import uuid
 import logging
+from datetime import date
 
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from supabase import Client
@@ -18,6 +19,8 @@ async def upload_document(
     organisation_id: str = Form(...),
     facility_id: str = Form(...),
     doc_type: str = Form(...),
+    period_from: date = Form(...),
+    period_to: date = Form(...),
     file: UploadFile = File(...),
     client: Client = Depends(get_user_supabase)
 ):
@@ -34,6 +37,8 @@ async def upload_document(
     valid_doc_types = ["electricity_bill", "fuel_invoice", "thermal_coal_invoice", "production_log"]
     if doc_type not in valid_doc_types:
         raise HTTPException(status_code=400, detail=f"Invalid doc_type. Must be one of {valid_doc_types}")
+    if period_to <= period_from:
+        raise HTTPException(status_code=422, detail="period_to must be after period_from")
 
     try:
         user_resp = client.auth.get_user()
@@ -64,6 +69,8 @@ async def upload_document(
             "facility_id": facility_id,
             "storage_path": storage_path,
             "doc_type": doc_type,
+            "period_from": period_from,
+            "period_to": period_to,
             "file_size_bytes": len(file_bytes),
             "mime_type": file.content_type,
             "uploaded_by": user_id

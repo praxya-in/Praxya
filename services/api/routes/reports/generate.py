@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client, create_client
 from services.api.core.config import get_settings
 from services.api.routes.deps import get_user_supabase
@@ -137,3 +137,52 @@ async def generate_report(
         "version": version,
         "generated_at": datetime.now().isoformat()
     }
+
+
+@router.get("/{report_id}/status")
+async def get_report_status(
+    report_id: str,
+    supabase: Client = Depends(get_user_supabase)
+):
+    result = (
+        supabase.table("reports")
+        .select("id, status, version")
+        .eq("id", report_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return result.data
+
+
+@router.get("/{report_id}/download")
+async def download_report(
+    report_id: str,
+    supabase: Client = Depends(get_user_supabase)
+):
+    result = (
+        supabase.table("reports")
+        .select("storage_path, status")
+        .eq("id", report_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if result.data.get("status") != "complete":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Report status is '{result.data.get('status')}', not complete"
+        )
+
+    settings = get_settings()
+    admin_client = create_client(
+        settings.NEXT_PUBLIC_SUPABASE_URL,
+        settings.SUPABASE_SERVICE_ROLE_KEY
+    )
+    signed = admin_client.storage.from_("documents").create_signed_url(
+        result.data["storage_path"], 3600
+    )
+    download_url = signed.get("signedURL") or signed.get("signedUrl")
+    return {"download_url": download_url, "expires_in": 3600}

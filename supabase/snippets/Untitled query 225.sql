@@ -1,0 +1,1 @@
+SELECT current_setting('app.settings.jwt_secret', true);

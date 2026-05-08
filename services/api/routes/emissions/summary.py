@@ -36,8 +36,8 @@ async def get_emissions_summary(
 
         return {
             "reporting_period_id": reporting_period_id,
-            "kpi1_ghg_summary": kpi1_data,
-            "kpi3_energy_summary": kpi3_data
+            "kpi1": kpi1_data,
+            "kpi3": kpi3_data
         }
     except Exception as e:
         logger.exception("Failed to fetch emissions summary")

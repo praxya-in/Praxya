@@ -5,5 +5,5 @@ from .eitl import router as eitl_router
 
 router = APIRouter()
 router.include_router(upload_router)
-router.include_router(jobs_router)
+router.include_router(jobs_router, prefix="/ingest")
 router.include_router(eitl_router)

@@ -1,0 +1,1 @@
+SELECT id FROM auth.users WHERE email = 'test@praxya.com'
