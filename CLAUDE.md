@@ -2,7 +2,7 @@
 ## The single source of truth for every AI session, every agent, every prompt.
 ## Read this fully before touching a single file.
 
-> **Last updated:** 2026-05-03
+> **Last updated:** 2026-05-09
 > **Version:** 1.0
 > **Maintainer:** Ritu (co-founder) — update this file every time a prompt completes
 > **Rule:** If something in this document contradicts the actual code, the code wins.
@@ -50,16 +50,19 @@ PROMPT RUN ORDER (from praxya_final_prompts.md):
 ✅  Prompt 3  — OCR Worker                   DONE  (2026-04-11, 7/7 tests)
 ✅  Prompt 4  — LLM Extraction Worker        DONE  (2026-04-18, Groq switch)
 ✅  Prompt 5  — pg_notify Queue Worker       DONE  (2026-04-18)
-⏳  Prompt 9  — DPDP Retention Worker        PENDING  ← run BEFORE Prompt 7
+⏳  Prompt 9  — DPDP Retention Worker        PENDING  (pg_cron manual step required first)
 ✅  Prompt 6  — FastAPI Routes               DONE  (2026-05-03)
 ✅  Prompt 7  — Upload Portal + EITL UI      DONE  (2026-05-03)
-⏳  Prompt 8  — Dashboard + PDF Report       PENDING  ← needs 9 + 6 first
+✅  Prompt 8  — Dashboard + PDF Report       DONE  (2026-05-09, ReportLab PDF)
 ✅  Auth fix (401 resolved)                  DONE  (2026-05-07)
 ✅  Integration gap fixes (4/4)              DONE  (2026-05-07)
+✅  ES256 JWT fix (Supabase CLI v2)           DONE  (2026-05-09)
+✅  Upload pipeline end-to-end               DONE  (2026-05-09)
+✅  PDF generation (ReportLab, Windows-safe) DONE  (2026-05-09)
 
-PARALLEL EXECUTION MAP:
-  Now:    Prompt 9 (Session A) + Prompt 6 (Session B) simultaneously
-  After:  Prompt 7 (Session C) + Prompt 8 (Session D) simultaneously
+NEXT PRIORITY:
+  Prompt 9 — DPDP Retention Worker
+  (pg_cron enabled ✅ — ready to run. Apply migration 008 first.)
 
 DATABASE MIGRATIONS:
   ✅  001_init.sql
@@ -92,7 +95,9 @@ Auth:         Supabase Auth (SSR pattern via middleware.ts)
 ```
 Framework:    FastAPI, Python, Pydantic v2, Uvicorn
 Hosting:      Railway (~$5/month Starter)
-PDF output:   WeasyPrint + Jinja2 — Docker ONLY, never Vercel
+PDF output:   ReportLab (Windows/local dev) — works without Docker
+              WeasyPrint + Jinja2 — Docker/Railway ONLY (requires GTK libs)
+              Current code uses ReportLab. Switch to WeasyPrint on Railway deploy.
 Queue:        pg_notify + polling worker (no Celery, no Redis)
 ```
 
@@ -115,7 +120,10 @@ Dev/testing:  Ollama locally (llama3/mistral) — zero API cost
 ```
 Provider:     Supabase (PostgreSQL + pgvector + Auth + Storage + RLS)
 Local dev:    supabase start (Docker)
-Env vars:     SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+Env vars:     NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+              SUPABASE_SERVICE_ROLE_KEY
+Auth note:    Local Supabase CLI v2 issues ES256 tokens (not HS256).
+              deps.py handles both via JWKS endpoint auto-detection.
 Direct DB:    DATABASE_URL (PostgreSQL direct — for queue worker only)
 ```
 
@@ -142,10 +150,10 @@ Praxya_Code/
 │   └── web/                     Next.js 15 frontend
 │       ├── app/
 │       │   ├── middleware.ts     ✅ COMPLETE — do not touch
-│       │   ├── dashboard/        ⏳ STUB — Prompt 8
+│       │   ├── dashboard/        ✅ COMPLETE — overview, ghg stub, audit stub
 │       │   ├── eitl/             ✅ COMPLETE — Prompt 7
 │       │   ├── upload/           ✅ COMPLETE — Prompt 7
-│       │   └── reports/          ⏳ STUB — Prompt 8
+│       │   └── reports/          ✅ COMPLETE — generate + status + download
 │       └── lib/                  ✅ COMPLETE — Prompt 7 (api.ts)
 │
 ├── services/
@@ -170,7 +178,7 @@ Praxya_Code/
 │   │   │   ├── exceptions.py     ExtractionValidationError, LLMTimeoutError, etc.
 │   │   │   └── tests/            7/7 passing
 │   │   │
-│   │   ├── reports/              ⏳ STUB — Prompt 8 (pdf_builder.py goes here)
+│   │   ├── reports/              ✅ COMPLETE — pdf_builder.py (ReportLab)
 │   │   └── validation/           ⏳ STUB
 │   │
 │   ├── infra/
@@ -193,7 +201,7 @@ Praxya_Code/
 │   ├── ingestion-sdk/
 │   └── report-gen/
 │
-├── docker-compose.yml            ⚠ needs WeasyPrint apt packages — Prompt 8
+├── docker-compose.yml            ⚠ needs WeasyPrint apt packages for Railway deploy
 ├── package.json
 └── pnpm-workspace.yaml
 ```
@@ -505,12 +513,11 @@ GAP-05: SEC benchmark fractions (20% elec / 80% thermal)
         Action needed: Confirm per-plant split during pilot data collection
 
 GAP-06: pg_cron extension in Supabase
-        Status: requires manual enable in Supabase Dashboard
-        Action: Dashboard → Database → Extensions → pg_cron → Enable
-        Required before Migration 008 (DPDP) can run
+        Status: ✅ RESOLVED (2026-05-09) — enabled in Supabase Dashboard
+        Migration 008 (DPDP) can now be applied.
 
 GAP-07: Supabase Storage bucket
-        Status: ✅ RESOLVED (2026-05-03)
+        Status: ✅ RESOLVED (2026-05-09)
         Action: Dashboard → Storage → New bucket → name: 'documents' → private
         Required before Upload Portal (Prompt 7) goes live
 
@@ -532,6 +539,12 @@ GAP-10: CA partner sign-off on BRSR PDF template
 ✅ RESOLVED: Summary response key mismatch (2026-05-07)
 ✅ RESOLVED: Upload missing period fields (2026-05-07)
 ✅ RESOLVED: Report status/download endpoints missing (2026-05-07)
+✅ RESOLVED (2026-05-09): ES256 JWT verification (Supabase CLI v2)
+✅ RESOLVED (2026-05-09): Upload period_from/to serialization
+✅ RESOLVED (2026-05-09): LLM numeric string coercion
+✅ RESOLVED (2026-05-09): PDF generation on Windows (ReportLab)
+✅ RESOLVED (2026-05-09): emissions summary key names (kpi1/kpi3)
+✅ RESOLVED (2026-05-09): org_id → organisation_id in frontend
 ```
 
 ---
@@ -542,10 +555,14 @@ Create `.env.local` in repo root. Never commit this file.
 
 ```bash
 # Supabase
-SUPABASE_URL=https://[your-project-ref].supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...   # For Storage operations ONLY
-DATABASE_URL=postgresql://postgres:[password]@localhost:54322/postgres
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54330          # local dev; use project URL for prod
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...                # must be JWT format (eyJ...), NOT sb_publishable_
+SUPABASE_SERVICE_ROLE_KEY=eyJ...                          # for Storage operations ONLY
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+⚠ The anon key MUST be the JWT format key from `supabase status` output,
+  not the sb_publishable_ format. Supabase CLI v2 issues ES256 tokens —
+  FastAPI verifies them via JWKS at NEXT_PUBLIC_SUPABASE_URL/auth/v1/.well-known/jwks.json
 
 # LLM — Groq (production)
 GROQ_API_KEY=gsk_...
@@ -663,7 +680,7 @@ Run through this checklist before any client receives access:
 
 ```
 □ Migration 008 applied (pg_cron enabled in Supabase Dashboard first)
-□ Supabase Storage bucket 'documents' created (private)
+✅ Supabase Storage bucket 'documents' created (private)
 □ WeasyPrint apt packages in Dockerfile — tested with docker-compose up
 □ RLS enabled on all client-data tables (verify: SELECT relrowsecurity FROM pg_class)
 □ Professional Indemnity Insurance active
@@ -777,7 +794,9 @@ Every AI session operating on this codebase must follow these:
 
 4. NEVER use float in the emissions domain. Decimal only.
 
-5. NEVER add WeasyPrint imports outside of Docker/Railway FastAPI service.
+5. PDF generation uses ReportLab locally. WeasyPrint is for Railway/Docker only.
+   NEVER import weasyprint in Next.js API routes or Vercel functions.
+   On Railway deploy, switch pdf_builder.py back to WeasyPrint + add apt packages to Dockerfile.
 
 6. NEVER remove the DEMO DATA watermark condition from the PDF template.
 

@@ -53,10 +53,10 @@ TOOLS = {
                 "properties": {
                     "billing_period_start": {"type": "string", "description": "ISO date YYYY-MM-DD"},
                     "billing_period_end":   {"type": "string", "description": "ISO date YYYY-MM-DD"},
-                    "total_units_kwh":       {"type": "number"},
-                    "peak_units_kwh":        {"type": "number"},
-                    "off_peak_units_kwh":    {"type": "number"},
-                    "sanctioned_load_kva":   {"type": "number"},
+                    "total_units_kwh":       {"type": ["number", "string"]},
+                    "peak_units_kwh":        {"type": ["number", "string"]},
+                    "off_peak_units_kwh":    {"type": ["number", "string"]},
+                    "sanctioned_load_kva":   {"type": ["number", "string"]},
                     "discom_name":           {"type": "string"},
                     "consumer_number":       {"type": "string"},
                     "confidence": {"type": "object", "additionalProperties": {"type": "number"}}
@@ -77,8 +77,8 @@ TOOLS = {
                     "invoice_date":     {"type": "string"},
                     "fuel_type":        {"type": "string",
                                         "enum": ["diesel","petrol","lpg","png","furnace_oil"]},
-                    "quantity_litres":  {"type": "number"},
-                    "rate_per_litre":   {"type": "number"},
+                    "quantity_litres":  {"type": ["number", "string"]},
+                    "rate_per_litre":   {"type": ["number", "string"]},
                     "supplier_name":    {"type": "string"},
                     "vehicle_number":   {"type": "string"},
                     "confidence": {"type": "object", "additionalProperties": {"type": "number"}}

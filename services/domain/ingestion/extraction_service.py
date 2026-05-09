@@ -18,6 +18,7 @@ import json
 import logging
 from decimal import Decimal
 from typing import Optional
+from datetime import date
 
 from supabase import create_client, Client
 from services.api.core.config import get_settings
@@ -40,6 +41,8 @@ logger = logging.getLogger(__name__)
 def _decimal_serialiser(obj):
     if isinstance(obj, Decimal):
         return str(obj)
+    if isinstance(obj, date):
+        return obj.isoformat()
     raise TypeError(f"Not serialisable: {type(obj)}")
 
 
@@ -58,7 +61,7 @@ class ExtractionService:
         """Service role key ONLY — required for pipeline_jobs writes server-side."""
         if self._db is None:
             self._db = create_client(
-                settings.SUPABASE_URL,
+                settings.NEXT_PUBLIC_SUPABASE_URL,
                 settings.SUPABASE_SERVICE_ROLE_KEY,
             )
         return self._db

@@ -69,8 +69,8 @@ async def upload_document(
             "facility_id": facility_id,
             "storage_path": storage_path,
             "doc_type": doc_type,
-            "period_from": period_from,
-            "period_to": period_to,
+            "period_from": period_from.isoformat(),
+            "period_to": period_to.isoformat(),
             "file_size_bytes": len(file_bytes),
             "mime_type": file.content_type,
             "uploaded_by": user_id

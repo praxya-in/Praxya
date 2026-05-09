@@ -64,7 +64,7 @@ async def generate_report(
     # We query evidence_documents joined with emission_inputs
     # In Supabase Python client, complex joins on nested tables can be tricky if relationships aren't perfectly mapped.
     # We can do multiple queries or rely on the fact that we can query emission_inputs with extraction_id -> document_id
-    ei_res = supabase.table("emission_inputs").select("extraction_id").eq("reporting_period_id", req.reporting_period_id).eq("status", "approved").execute()
+    ei_res = supabase.table("emission_inputs").select("extraction_id").eq("reporting_period_id", req.reporting_period_id).execute()
     extraction_ids = [ei["extraction_id"] for ei in ei_res.data if ei.get("extraction_id")]
     
     source_documents = []

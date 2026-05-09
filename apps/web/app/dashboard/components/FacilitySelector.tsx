@@ -44,7 +44,7 @@ export default function FacilitySelector({ onSelect }: Props) {
         const { data: facilityRows } = await supabase
           .from('facilities')
           .select('id, name')
-          .eq('org_id', orgId)
+          .eq('organisation_id', orgId)
           .order('name') as { data: any[] }
 
         if (facilityRows) {
