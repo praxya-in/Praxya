@@ -32,7 +32,7 @@ async def calculate_emissions(
 
     # Get all approved inputs that don't have results yet
     # Actually, we can fetch all approved inputs for the period
-    inputs_res = client.table("emission_inputs").select("*").eq("reporting_period_id", reporting_period_id).eq("status", "approved").execute()
+    inputs_res = client.table("emission_inputs").select("*").eq("reporting_period_id", reporting_period_id).eq("status", "eitl_approved").execute()
     
     if not inputs_res.data:
         return {"status": "ok", "message": "No approved inputs found for this period.", "results": 0}

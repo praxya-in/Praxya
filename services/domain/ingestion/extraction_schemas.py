@@ -42,13 +42,17 @@ class ElectricityBillExtraction(BaseModel):
     def validate_peak_sum(self) -> 'ElectricityBillExtraction':
         if self.peak_units_kwh is not None and self.off_peak_units_kwh is not None:
             summed = self.peak_units_kwh + self.off_peak_units_kwh
-            tolerance = self.total_units_kwh * Decimal("0.02")
-            if abs(summed - self.total_units_kwh) > tolerance:
-                raise ValueError(
-                    f'peak ({self.peak_units_kwh}) + off_peak ({self.off_peak_units_kwh}) '
-                    f'= {summed}, does not match total_units_kwh={self.total_units_kwh} '
-                    f'within 2% tolerance.'
-                )
+            if summed == Decimal("0"):
+                self.peak_units_kwh = None
+                self.off_peak_units_kwh = None
+            else:
+                tolerance = self.total_units_kwh * Decimal("0.02")
+                if abs(summed - self.total_units_kwh) > tolerance:
+                    raise ValueError(
+                        f'peak ({self.peak_units_kwh}) + off_peak ({self.off_peak_units_kwh}) '
+                        f'= {summed}, does not match total_units_kwh={self.total_units_kwh} '
+                        f'within 2% tolerance.'
+                    )
         return self
 
 

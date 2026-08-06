@@ -3,7 +3,7 @@ LLM Task.
 
 Responsibility:
   1. Call ExtractionService.run() → document_extractions INSERT (handled there).
-  2. Map ExtractionResult to emission_inputs INSERT (pending).
+  2. Map ExtractionResult to emission_inputs INSERT (raw).
 
 The emission_inputs INSERT is here, not in ExtractionService, because
 ExtractionService is a pure extraction+persistence layer.
@@ -51,7 +51,7 @@ def run_llm_task(
     extraction_service: Optional[ExtractionService] = None,
 ) -> Optional[str]:
     """
-    Run extraction → insert document_extractions → insert emission_inputs (pending).
+    Run extraction → insert document_extractions → insert emission_inputs (raw).
     Returns extraction_id on success, None on failure.
 
     pipeline_jobs status is updated inside ExtractionService.run().
@@ -60,8 +60,6 @@ def run_llm_task(
     svc = extraction_service or ExtractionService()
 
     # ── Step 1: Extract + persist to document_extractions ────────────
-    # ExtractionService handles: llm_extracting status, Claude call,
-    # Pydantic validation, document_extractions INSERT, awaiting_review status.
     try:
         extraction_id = svc.run(
             ocr_result=ocr_result,
@@ -70,12 +68,10 @@ def run_llm_task(
             job_id=job_id,
         )
     except (LLMTimeoutError, LLMRateLimitError) as e:
-        # Transient — job left as 'failed' by ExtractionService, worker can retry
         logger.warning(f"[job={job_id}] Transient LLM error: {e}")
         _increment_retry(db_conn, job_id, str(e))
         return None
     except (ExtractionValidationError, LLMAPIError, NoToolUseBlockError) as e:
-        # Permanent — already set to 'permanently_failed' by ExtractionService
         logger.error(f"[job={job_id}] Permanent extraction error: {e}")
         return None
     except ExtractionServiceError as e:
@@ -84,32 +80,19 @@ def run_llm_task(
         return None
 
     # ── Step 2: Retrieve ExtractionResult for emission_inputs mapping ─
-    # ExtractionService already committed document_extractions.
-    # We now need the validated extraction object to map to emission_inputs.
-    # Re-extract from ExtractionService (or refactor ExtractionService to return it).
-    # ⚠ This is a known design tension: ExtractionService.run() returns only the ID.
-    #   To avoid a second DB round-trip, we run extraction inline here with USE_OLLAMA=False.
-    #   Refactor ExtractionService to return ExtractionResult if round-trip cost matters.
-    #
-    #   For MVP: accept the second extraction call. Both will agree because
-    #   OCR text is deterministic. If LLM non-determinism becomes a concern,
-    #   refactor ExtractionService.run() to return (extraction_id, ExtractionResult).
-
     from services.domain.ingestion.llm_extractor import LLMExtractor
     try:
         result: ExtractionResult = LLMExtractor().extract(
             ocr_result, doc_type, document_id
         )
     except Exception as e:
-        # extraction_id already committed; emission_input insert failed
-        # Job is awaiting_review from ExtractionService — EITL can still review
         logger.error(
             f"[job={job_id}] Second extraction pass failed during emission_input mapping: {e}. "
             f"extraction_id={extraction_id} is committed. Manual emission_input entry required."
         )
         return extraction_id  # partial success
 
-    # ── Step 3: Insert emission_inputs (pending) ─────────────────────
+    # ── Step 3: Insert emission_inputs (raw) ─────────────────────────
     try:
         _insert_emission_input(
             db_conn=db_conn,
@@ -138,7 +121,18 @@ def _insert_emission_input(
     job_id: str,
 ) -> None:
     """
-    Map ExtractionResult → emission_inputs row (INSERT-ONLY, status='pending').
+    Map ExtractionResult → emission_inputs row (INSERT-ONLY, status='raw').
+
+    FIX LOG:
+      - BUG 1: status='pending' changed to status='raw'.
+        'pending' is not a valid input_status enum value per 003_emissions.sql.
+        Valid values: raw | validated | eitl_required | eitl_approved | rejected.
+        New inserts are 'raw' — not yet validated. EITL pipeline advances the status.
+
+      - BUG 2: column key 'organisation_id' changed to 'org_id'.
+        emission_inputs schema (003_emissions.sql) defines the FK column as org_id,
+        not organisation_id. Mismatched key would cause a psycopg2 KeyError or
+        column-not-found error on the next crash after BUG 1 was fixed.
 
     ⚠ All numeric values passed as Decimal. psycopg2 serialises Decimal → NUMERIC.
       Never call float() on a Decimal — violates zero-float constraint.
@@ -146,18 +140,33 @@ def _insert_emission_input(
     ⚠ ThermalCoalInvoiceExtraction:
       - If quantity_GJ is available: INSERT with unit='GJ', input_type='thermal_coal'
       - If quantity_GJ is None (only tonnes present): INSERT with unit='tonnes',
-        input_type='thermal_coal', and mark requires_human_review via metadata.
         EITL must supply GJ before calculation proceeds.
-        GHGCalculator.calculate_scope1_thermal_coal() requires GJ, not tonnes.
     """
     ext = extraction.extraction if isinstance(extraction, ExtractionResult) else extraction
 
+    if isinstance(ext, ElectricityBillExtraction):
+        source_type = 'electricity_bill'
+    elif isinstance(ext, FuelInvoiceExtraction):
+        if ext.fuel_type == 'diesel': source_type = 'diesel_invoice'
+        elif ext.fuel_type == 'lpg': source_type = 'lpg_invoice'
+        elif ext.fuel_type == 'furnace_oil': source_type = 'furnace_oil_invoice'
+        elif ext.fuel_type == 'png': source_type = 'natural_gas_invoice'
+        else: source_type = 'manual_entry'
+    elif isinstance(ext, ThermalCoalInvoiceExtraction):
+        source_type = 'coal_invoice'
+    elif isinstance(ext, ProductionLogExtraction):
+        source_type = 'process_emission_log'
+    else:
+        source_type = 'manual_entry'
+
+    # ── FIX 1: 'pending' → 'raw' ──
     base_params = dict(
         organisation_id=organisation_id,
         facility_id=facility_id,
         reporting_period_id=reporting_period_id,
         extraction_id=extraction_id,
-        status='pending',
+        source_type=source_type,
+        status='raw',
         is_seed_data=False,
     )
 
@@ -166,20 +175,20 @@ def _insert_emission_input(
             cur.execute("""
                 INSERT INTO emission_inputs
                     (organisation_id, facility_id, reporting_period_id, extraction_id,
-                     input_type, quantity, unit, status, is_seed_data)
+                     source_type, input_type, quantity, unit, status, is_seed_data)
                 VALUES (%(organisation_id)s, %(facility_id)s, %(reporting_period_id)s,
                         %(extraction_id)s,
-                        'grid_electricity', %(quantity)s, 'kWh', %(status)s, %(is_seed_data)s)
+                        %(source_type)s, 'grid_electricity', %(quantity)s, 'kWh', %(status)s, %(is_seed_data)s)
             """, {**base_params, 'quantity': ext.total_units_kwh})
 
         elif isinstance(ext, FuelInvoiceExtraction):
             cur.execute("""
                 INSERT INTO emission_inputs
                     (organisation_id, facility_id, reporting_period_id, extraction_id,
-                     input_type, quantity, unit, status, fuel_sub_type, is_seed_data)
+                     source_type, input_type, quantity, unit, status, fuel_sub_type, is_seed_data)
                 VALUES (%(organisation_id)s, %(facility_id)s, %(reporting_period_id)s,
                         %(extraction_id)s,
-                        'fuel_consumption', %(quantity)s, 'litres', %(status)s,
+                        %(source_type)s, 'fuel_consumption', %(quantity)s, 'litres', %(status)s,
                         %(fuel_sub_type)s, %(is_seed_data)s)
             """, {**base_params,
                   'quantity': ext.quantity_litres,
@@ -191,9 +200,7 @@ def _insert_emission_input(
                 unit = 'GJ'
                 metadata = None
             else:
-                # quantity_GJ not on document — store tonnes, block calculation
-                # until EITL supplies GJ (or EITL derives it from GCV)
-                quantity = ext.quantity_tonnes  # guaranteed non-None by model_validator
+                quantity = ext.quantity_tonnes
                 unit = 'tonnes'
                 metadata = {
                     'requires_gj_conversion': True,
@@ -211,10 +218,10 @@ def _insert_emission_input(
             cur.execute("""
                 INSERT INTO emission_inputs
                     (organisation_id, facility_id, reporting_period_id, extraction_id,
-                     input_type, quantity, unit, status, metadata, is_seed_data)
+                     source_type, input_type, quantity, unit, status, metadata, is_seed_data)
                 VALUES (%(organisation_id)s, %(facility_id)s, %(reporting_period_id)s,
                         %(extraction_id)s,
-                        'thermal_coal', %(quantity)s, %(unit)s, %(status)s,
+                        %(source_type)s, 'thermal_coal', %(quantity)s, %(unit)s, %(status)s,
                         %(metadata)s, %(is_seed_data)s)
             """, {**base_params,
                   'quantity': quantity,
@@ -235,10 +242,10 @@ def _insert_emission_input(
             cur.execute("""
                 INSERT INTO emission_inputs
                     (organisation_id, facility_id, reporting_period_id, extraction_id,
-                     input_type, quantity, unit, status, process_id, metadata, is_seed_data)
+                     source_type, input_type, quantity, unit, status, process_id, metadata, is_seed_data)
                 VALUES (%(organisation_id)s, %(facility_id)s, %(reporting_period_id)s,
                         %(extraction_id)s,
-                        'production_volume', %(quantity)s, 'tonnes', %(status)s,
+                        %(source_type)s, 'production_volume', %(quantity)s, 'tonnes', %(status)s,
                         %(process_id)s, %(metadata)s, %(is_seed_data)s)
             """, {**base_params,
                   'quantity': ext.quantity_tonnes,
@@ -246,7 +253,6 @@ def _insert_emission_input(
                   'metadata': metadata})
 
         else:
-            # Defensive: doc_type is validated upstream but guard here anyway
             raise ValueError(
                 f"Unknown extraction type: {type(ext).__name__}. "
                 f"Add a branch to _insert_emission_input for this type."
@@ -270,8 +276,7 @@ def _mark_failed(db_conn, job_id: str, error_message: str) -> None:
 def _increment_retry(db_conn, job_id: str, error_message: str) -> None:
     """
     Increment retry_count. If >= 3, set permanently_failed.
-    Otherwise set failed — the poller will NOT re-queue automatically.
-    Re-queue requires a manual reset or a pg_cron job (see HUMAN DECISIONS).
+    Otherwise set failed.
     """
     try:
         with db_conn.cursor() as cur:
